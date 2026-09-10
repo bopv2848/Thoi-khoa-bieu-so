@@ -373,20 +373,22 @@
 <div class="w-full max-w-xl flex flex-col gap-3">
   
   <!-- THANH ĐIỀU HƯỚNG NHANH & TIỆN ÍCH -->
-  <div class="no-print flex items-center justify-between px-1">
-    <div class="flex items-center gap-2 sm:gap-2.5">
-      <img src="logo-truong.png" onerror="this.onerror=null;this.src='logo trường THCS Tân Hải.jpg';" alt="Logo Trường THCS Tân Hải" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-contain shrink-0 drop-shadow-[0_2px_8px_rgba(56,189,248,0.25)]">
+  <div class="no-print flex flex-col gap-2.5 px-1">
+    <!-- KHUNG THÔNG TIN TRƯỜNG & LOGO -->
+    <div class="flex items-center gap-2.5">
+      <img src="logo-truong.png" onerror="this.onerror=null;this.src='logo trường THCS Tân Hải.jpg';" alt="Logo Trường THCS Tân Hải" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-contain shrink-0 drop-shadow-[0_2px_8px_rgba(56,189,248,0.25)]">
       <div class="flex flex-col">
-        <span class="text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider leading-tight">TRƯỜNG THCS TÂN HẢI</span>
-        <h1 class="text-xs font-bold text-cyan-500 dark:text-cyan-400 uppercase tracking-wider leading-tight">THỜI KHÓA BIỂU ĐIỆN TỬ</h1>
-        <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Năm học 2026 - 2027</p>
+        <span class="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider leading-tight">TRƯỜNG THCS TÂN HẢI</span>
+        <h1 class="text-xs sm:text-sm font-bold text-cyan-500 dark:text-cyan-400 uppercase tracking-wider leading-tight">THỜI KHÓA BIỂU ĐIỆN TỬ</h1>
+        <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Năm học 2026 - 2027</p>
       </div>
     </div>
     
-    <div class="flex items-center gap-1.5">
-      <button onclick="openNotesManagerModal()" class="h-8 px-2 rounded-lg glass-panel flex items-center justify-center gap-1 text-xs hover:border-amber-400 text-amber-300 font-bold transition relative" title="Quản lý Ghi Nhớ Tiết Học">
+    <!-- KHUNG CÁC TÍNH NĂNG / TIỆN ÍCH NẰM PHÍA DƯỚI -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <button onclick="openNotesManagerModal()" class="h-8 px-2.5 rounded-lg glass-panel flex items-center justify-center gap-1.5 text-xs hover:border-amber-400 text-amber-300 font-bold transition relative" title="Quản lý Ghi Nhớ Tiết Học">
         <span>📝</span>
-        <span class="text-[11px] hidden sm:inline">Ghi Nhớ</span>
+        <span class="text-[11px]">Ghi Nhớ</span>
         <span id="notesCountBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[17px] h-4 px-1 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black flex items-center justify-center shadow-md">0</span>
       </button>
       <button onclick="toggleTheme()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Đổi giao diện Sáng/Tối">
