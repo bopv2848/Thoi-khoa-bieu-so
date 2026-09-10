@@ -1,4 +1,4 @@
-﻿# Operating System Files
+# Operating System Files
 Thumbs.db
 Desktop.ini
 .DS_Store
@@ -11,3 +11,7 @@ Desktop.ini
 *.njsproj
 *.sln
 *.sw?
+
+# Dependencies & Deployments
+node_modules/
+.vercel
