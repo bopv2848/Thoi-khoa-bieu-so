@@ -544,11 +544,11 @@
           <div class="flex justify-between text-slate-300"><span>Tiết 5 (chỉ Thứ 6):</span><strong class="font-mono text-cyan-200">10:45 - 11:30</strong></div>
         </div>
 
-        <!-- Buổi Chiều: 3 Tiết, ra chơi 30 phút sau tiết 2 -->
+        <!-- Buổi Chiều: Học Thứ 2, 3, 4 (3 Tiết). Thứ 5 và Thứ 6 nghỉ học -->
         <div class="space-y-1.5 bg-slate-900/40 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-800">
           <div class="font-extrabold text-cyan-400 tracking-wider flex items-center justify-between mb-1">
             <span>BUỔI CHIỀU</span>
-            <span class="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded">3 Tiết</span>
+            <span class="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded">T2-T4: 3 Tiết • T5-T6: Nghỉ</span>
           </div>
           <div class="flex justify-between text-slate-300"><span>Tiết 1:</span><strong class="font-mono text-cyan-200">14:00 - 14:45</strong></div>
           <div class="flex justify-between text-slate-300"><span>Tiết 2:</span><strong class="font-mono text-cyan-200">14:50 - 15:35</strong></div>
@@ -556,6 +556,9 @@
             <span>Ra chơi:</span><span class="font-mono font-semibold">15:35 - 16:05 (30p)</span>
           </div>
           <div class="flex justify-between text-slate-300"><span>Tiết 3:</span><strong class="font-mono text-cyan-200">16:05 - 16:50</strong></div>
+          <div class="flex justify-between text-emerald-400 text-[10px] italic pt-1 border-t border-slate-800/80">
+            <span>Chiều Thứ 5 & Thứ 6:</span><span class="font-semibold">Nghỉ học (Thời gian nghỉ)</span>
+          </div>
         </div>
       </div>
     </div>
@@ -941,7 +944,8 @@
   // KHUNG GIỜ THEO YÊU CẦU:
   // Sáng: T1: 7:00-7:45, T2: 7:50-8:35, Ra chơi 8:35-9:05 (30p), T3: 9:05-9:50, T4: 9:55-10:40
   // Riêng Thứ Sáu học đủ 5 tiết sáng: Giải lao 10:40-10:45, Tiết 5: 10:45-11:30 (Thứ 2, 3, 4, 5 chỉ học 4 tiết sáng)
-  // Chiều: T1: 14:00-14:45, T2: 14:50-15:35, Ra chơi 15:35-16:05 (30p), T3: 16:05-16:50
+  // Chiều: Chỉ học Thứ Hai, Thứ Ba, Thứ Tư (3 tiết): T1: 14:00-14:45, T2: 14:50-15:35, Ra chơi 15:35-16:05 (30p), T3: 16:05-16:50
+  // Chiều Thứ Năm và Chiều Thứ Sáu: NGHỈ HỌC (Thời gian nghỉ)
   const PERIOD_SLOTS = [
     // Sáng
     { session: 'sang', period: 0, label: 'Tiết 1 Sáng', start: 7*60,      end: 7*60 + 45 },
@@ -951,16 +955,16 @@
     { session: 'sang', period: 2, label: 'Tiết 3 Sáng', start: 9*60 + 5,  end: 9*60 + 50 },
     { session: 'sang', period: -2, label: 'Giải lao 5p', start: 9*60 + 50, end: 9*60 + 55 },
     { session: 'sang', period: 3, label: 'Tiết 4 Sáng', start: 9*60 + 55, end: 10*60 + 40 },
-    // Tiết 5 Sáng chỉ học vào Thứ Sáu (Thứ 2, 3, 4, 5 chỉ học 4 tiết sáng đến 10:40 rồi nghỉ trưa)
+    // Tiết 5 Sáng chỉ học vào Thứ Sáu (Thứ 2, 3, 4, 5 chỉ học 4 tiết sáng đến 10:40 rồi nghỉ trưa / nghỉ chiều)
     { session: 'sang', period: -2, label: 'Giải lao 5p', start: 10*60 + 40, end: 10*60 + 45, days: [5] },
     { session: 'sang', period: 4, label: 'Tiết 5 Sáng', start: 10*60 + 45, end: 11*60 + 30, days: [5] },
     
-    // Chiều
-    { session: 'chieu', period: 0, label: 'Tiết 1 Chiều', start: 14*60,     end: 14*60 + 45 },
-    { session: 'chieu', period: -2, label: 'Giải lao 5p', start: 14*60 + 45, end: 14*60 + 50 },
-    { session: 'chieu', period: 1, label: 'Tiết 2 Chiều', start: 14*60 + 50, end: 15*60 + 35 },
-    { session: 'chieu', period: -1, label: 'Ra Chơi Chiều (30p)', start: 15*60 + 35, end: 16*60 + 5 },
-    { session: 'chieu', period: 2, label: 'Tiết 3 Chiều', start: 16*60 + 5,  end: 16*60 + 50 }
+    // Chiều: Chỉ học Thứ 2, Thứ 3, Thứ 4 (3 tiết). Chiều Thứ 5 và Thứ 6 nghỉ học hoàn toàn
+    { session: 'chieu', period: 0, label: 'Tiết 1 Chiều', start: 14*60,     end: 14*60 + 45, days: [1, 2, 3] },
+    { session: 'chieu', period: -2, label: 'Giải lao 5p', start: 14*60 + 45, end: 14*60 + 50, days: [1, 2, 3] },
+    { session: 'chieu', period: 1, label: 'Tiết 2 Chiều', start: 14*60 + 50, end: 15*60 + 35, days: [1, 2, 3] },
+    { session: 'chieu', period: -1, label: 'Ra Chơi Chiều (30p)', start: 15*60 + 35, end: 16*60 + 5, days: [1, 2, 3] },
+    { session: 'chieu', period: 2, label: 'Tiết 3 Chiều', start: 16*60 + 5,  end: 16*60 + 50, days: [1, 2, 3] }
   ];
 
   const STORAGE_DATA_KEY = "tkb_t1_storage_data_v2"; // Legacy single week
@@ -1067,7 +1071,9 @@
     const slots = [];
     for (let dayIdx = 0; dayIdx < sData.length; dayIdx++) {
       const day = sData[dayIdx];
-      for (let pIdx = 0; pIdx < 5; pIdx++) {
+      // Buổi sáng: Thứ 6 học 5 tiết, Thứ 2 - Thứ 5 học 4 tiết
+      const morningCount = (day.dayId === 5) ? 5 : 4;
+      for (let pIdx = 0; pIdx < morningCount; pIdx++) {
         slots.push({
           dayIdx,
           dayId: day.dayId,
@@ -1080,18 +1086,22 @@
           key: `${dayIdx}_${pIdx}_sang`
         });
       }
-      for (let pIdx = 0; pIdx < 3; pIdx++) {
-        slots.push({
-          dayIdx,
-          dayId: day.dayId,
-          dayName: day.name,
-          session: 'chieu',
-          sessionName: 'Buổi Chiều',
-          pIdx,
-          periodNumber: pIdx + 1,
-          subject: (day.periods[pIdx] && day.periods[pIdx].chieu) || "—",
-          key: `${dayIdx}_${pIdx}_chieu`
-        });
+      // Buổi chiều: Chỉ học 3 tiết vào Thứ 2, Thứ 3, Thứ 4 (Thứ 5 & Thứ 6 nghỉ chiều)
+      const hasAfternoon = [1, 2, 3].includes(day.dayId);
+      if (hasAfternoon) {
+        for (let pIdx = 0; pIdx < 3; pIdx++) {
+          slots.push({
+            dayIdx,
+            dayId: day.dayId,
+            dayName: day.name,
+            session: 'chieu',
+            sessionName: 'Buổi Chiều',
+            pIdx,
+            periodNumber: pIdx + 1,
+            subject: (day.periods[pIdx] && day.periods[pIdx].chieu) || "—",
+            key: `${dayIdx}_${pIdx}_chieu`
+          });
+        }
       }
     }
     return slots;
@@ -1199,16 +1209,21 @@
     if (btnClear) btnClear.classList.toggle("hidden", keys.length === 0);
   }
 
-  function renderCellContent(subject, key) {
+  function renderCellContent(subject, key, placeholderText = null) {
     const note = notesData[key];
     const hasNote = !!(note && note.text && note.text.trim() !== "");
+    const displaySubject = (subject === "—" && placeholderText) 
+      ? `<span class="text-slate-500/70 text-[10px] font-medium tracking-wide">${placeholderText}</span>` 
+      : `<span>${subject}</span>`;
+
     if (!hasNote) {
-      return `<span>${subject}</span>`;
+      return displaySubject;
     }
     const cleanNote = escapeHtml(note.text);
+    const noteSubjectTitle = (subject === "—" && placeholderText) ? placeholderText : subject;
     return `
       <div class="flex items-center justify-center gap-1 w-full">
-        <span class="truncate">${subject}</span>
+        <span class="truncate">${noteSubjectTitle}</span>
         <span class="text-[10px] flex-shrink-0 animate-bounce" title="Ghi nhớ: ${cleanNote}">📝</span>
       </div>
       <div class="cell-note-pill" title="Ghi nhớ: ${cleanNote}">
@@ -1288,9 +1303,11 @@
 
     // Giờ kết thúc buổi sáng: Thứ Sáu học 5 tiết (kết thúc 11:30); Thứ 2, 3, 4, 5 chỉ học 4 tiết (kết thúc 10:40)
     const morningEndMinutes = (currentDay === 5) ? (11 * 60 + 30) : (10 * 60 + 40);
+    // Buổi chiều chỉ học vào Thứ 2, Thứ 3, Thứ 4. Thứ 5 và Thứ 6 nghỉ chiều hoàn toàn.
+    const hasAfternoon = [1, 2, 3].includes(currentDay);
 
     for (const slot of PERIOD_SLOTS) {
-      // Bỏ qua các slot chỉ áp dụng cho ngày nhất định (ví dụ Tiết 5 chỉ học ở Thứ Sáu)
+      // Bỏ qua các slot chỉ áp dụng cho ngày nhất định (ví dụ Tiết 5 chỉ học ở Thứ Sáu, chiều chỉ học Thứ 2, 3, 4)
       if (slot.days && !slot.days.includes(currentDay)) {
         continue;
       }
@@ -1311,9 +1328,10 @@
 
     if (nowMinutes < 7 * 60) {
       return { isActiveSchool: false, status: "Chưa vào học sáng (07:00)", isBreak: false };
-    } else if (nowMinutes >= morningEndMinutes && nowMinutes < 14 * 60) {
-      const lunchRange = (currentDay === 5) ? "11:30 - 14:00" : "10:40 - 14:00";
-      return { isActiveSchool: false, status: `Nghỉ trưa (${lunchRange})`, isBreak: true };
+    } else if (!hasAfternoon && nowMinutes >= morningEndMinutes) {
+      return { isActiveSchool: false, status: "Nghỉ Chiều (Thời gian nghỉ)", isBreak: false, isAfternoonOff: true };
+    } else if (hasAfternoon && nowMinutes >= morningEndMinutes && nowMinutes < 14 * 60) {
+      return { isActiveSchool: false, status: "Nghỉ trưa (10:40 - 14:00)", isBreak: true };
     } else {
       return { isActiveSchool: false, status: "Đã tan học", isBreak: false };
     }
@@ -1336,6 +1354,13 @@
         if (day.dayId !== targetDay) return;
       }
 
+      const isAfternoonOffDay = [4, 5].includes(day.dayId);
+      const morningHeader = (day.dayId === 5) ? "SÁNG (5 TIẾT)" : "SÁNG (4 TIẾT)";
+      const afternoonHeader = isAfternoonOffDay ? "CHIỀU (NGHỈ)" : "CHIỀU (3 TIẾT)";
+      const afternoonHeaderCls = isAfternoonOffDay
+        ? "bg-slate-900/60 text-slate-400 rounded py-0.5 border border-slate-700/50"
+        : "bg-sky-950/40 text-cyan-300 rounded py-0.5 border border-sky-500/20";
+
       const card = document.createElement("div");
       card.className = `glass-panel rounded-2xl p-3 sm:p-4 grid grid-cols-[74px_1fr] sm:grid-cols-[84px_1fr] gap-2.5 items-center transition-all ${
         isToday ? "border-emerald-400/70 shadow-[0_0_20px_rgba(16,185,129,0.18)]" : ""
@@ -1355,12 +1380,28 @@
 
         // Tiết 5 Sáng chỉ có ở Thứ Sáu; Thứ 2, 3, 4, 5 không học thực Tiết 5 sáng nên không bao giờ hiện thời gian thực
         const hasRealMorningPeriod = (pIdx < 4) || (day.dayId === 5);
+        // Buổi chiều chỉ học Tiết 1, 2, 3 vào Thứ 2, Thứ 3, Thứ 4. Chiều Thứ 5 và Thứ 6 nghỉ hoàn toàn.
+        const hasRealAfternoonPeriod = [1, 2, 3].includes(day.dayId) && (pIdx < 3);
         const isCurrentMorning = isToday && hasRealMorningPeriod && activeInfo.isActiveSchool && !activeInfo.isBreak && activeInfo.session === 'sang' && activeInfo.periodIdx === pIdx;
-        const isCurrentAfternoon = isToday && activeInfo.isActiveSchool && !activeInfo.isBreak && activeInfo.session === 'chieu' && activeInfo.periodIdx === pIdx;
+        const isCurrentAfternoon = isToday && hasRealAfternoonPeriod && activeInfo.isActiveSchool && !activeInfo.isBreak && activeInfo.session === 'chieu' && activeInfo.periodIdx === pIdx;
 
         const sangTitle = (day.dayId !== 5 && pIdx === 4 && p.sang === '—')
           ? 'Tiết 5: Nghỉ (Buổi sáng Thứ 2 - Thứ 5 chỉ học 4 tiết)'
           : (sangHasNote ? 'Ghi nhớ: ' + escapeHtml(sangNote.text) + ' • Nhấn để chỉnh sửa' : 'Nhấn để đổi môn: Tiết ' + (pIdx + 1) + ' Sáng');
+
+        let chieuTitle = "";
+        if (isAfternoonOffDay) {
+          chieuTitle = chieuHasNote
+            ? 'Ghi nhớ: ' + escapeHtml(chieuNote.text) + ' • (Chiều ' + day.name + ' nghỉ học)'
+            : (p.chieu === '—' ? 'Chiều ' + day.name + ': Nghỉ học (Thời gian nghỉ)' : 'Nhấn để đổi môn: Tiết ' + (pIdx + 1) + ' Chiều');
+        } else if (pIdx >= 3) {
+          chieuTitle = (p.chieu === '—') ? 'Buổi chiều chỉ học 3 tiết (Nhấn để đổi nếu có tiết)' : 'Nhấn để đổi môn: Tiết ' + (pIdx + 1) + ' Chiều';
+        } else {
+          chieuTitle = chieuHasNote ? 'Ghi nhớ: ' + escapeHtml(chieuNote.text) + ' • Nhấn để chỉnh sửa' : 'Nhấn để đổi môn: Tiết ' + (pIdx + 1) + ' Chiều';
+        }
+
+        const chieuPlaceholder = isAfternoonOffDay ? "Nghỉ" : (pIdx >= 3 ? "—" : null);
+        const chieuExtraCls = (isAfternoonOffDay && p.chieu === '—') ? 'opacity-85' : '';
 
         rowsHtml += `
           <div class="grid grid-cols-[24px_1fr_1fr] gap-1.5 sm:gap-2 mb-1.5 items-stretch last:mb-0">
@@ -1373,11 +1414,11 @@
               ${renderCellContent(p.sang, sangKey)}
             </div>
             <div 
-              class="cell-box ${chieuCls} ${chieuHasNote ? 'has-note' : ''} ${isCurrentAfternoon ? 'active-period-box' : ''}" 
+              class="cell-box ${chieuCls} ${chieuExtraCls} ${chieuHasNote ? 'has-note' : ''} ${isCurrentAfternoon ? 'active-period-box' : ''}" 
               onclick="openEdit(${dayIdx}, ${pIdx}, 'chieu')"
-              title="${chieuHasNote ? 'Ghi nhớ: ' + escapeHtml(chieuNote.text) + ' • Nhấn để chỉnh sửa' : 'Nhấn để đổi môn: Tiết ' + (pIdx + 1) + ' Chiều'}"
+              title="${chieuTitle}"
             >
-              ${renderCellContent(p.chieu, chieuKey)}
+              ${renderCellContent(p.chieu, chieuKey, chieuPlaceholder)}
             </div>
           </div>
         `;
@@ -1393,10 +1434,10 @@
           </span>
         </div>
         <div class="w-full">
-          <div class="grid grid-cols-[24px_1fr_1fr] gap-1.5 sm:gap-2 text-center text-[10px] font-extrabold text-cyan-300 uppercase mb-1.5 tracking-wider">
-            <div>TIẾT</div>
-            <div class="bg-cyan-950/40 rounded py-0.5 border border-cyan-500/20">SÁNG</div>
-            <div class="bg-sky-950/40 rounded py-0.5 border border-sky-500/20">CHIỀU</div>
+          <div class="grid grid-cols-[24px_1fr_1fr] gap-1.5 sm:gap-2 text-center text-[10px] font-extrabold uppercase mb-1.5 tracking-wider">
+            <div class="text-cyan-300">TIẾT</div>
+            <div class="bg-cyan-950/40 text-cyan-300 rounded py-0.5 border border-cyan-500/20">${morningHeader}</div>
+            <div class="${afternoonHeaderCls}">${afternoonHeader}</div>
           </div>
           ${rowsHtml}
         </div>
@@ -1590,7 +1631,13 @@
       }
     } else {
       statusText.innerHTML = `<span class="text-slate-400 font-medium">${info.status}</span>`;
-      remText.innerText = "Ngoại Khóa";
+      if (info.isAfternoonOff) {
+        remText.innerText = "Nghỉ Chiều";
+      } else if (info.isBreak) {
+        remText.innerText = "Nghỉ Trưa";
+      } else {
+        remText.innerText = "Ngoại Khóa";
+      }
     }
 
     // Hiển thị banner Ghi Nhớ cho tiết học đang diễn ra theo thời gian thực
@@ -2162,9 +2209,13 @@
       message += `  • Tiết ${idx + 1}: ${p.sang}\n`;
     });
     message += `🌆 BUỔI CHIỀU:\n`;
-    dayObj.periods.slice(0, 3).forEach((p, idx) => {
-      message += `  • Tiết ${idx + 1}: ${p.chieu}\n`;
-    });
+    if ([4, 5].includes(dayObj.dayId)) {
+      message += `  • Nghỉ học (Thời gian nghỉ)\n`;
+    } else {
+      dayObj.periods.slice(0, 3).forEach((p, idx) => {
+        message += `  • Tiết ${idx + 1}: ${p.chieu}\n`;
+      });
+    }
 
     const textarea = document.createElement("textarea");
     textarea.value = message;
