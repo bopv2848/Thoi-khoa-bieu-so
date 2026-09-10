@@ -384,28 +384,37 @@
       </div>
     </div>
     
-    <!-- KHUNG CÁC TÍNH NĂNG / TIỆN ÍCH NẰM PHÍA DƯỚI -->
-    <div class="flex items-center gap-1.5 sm:gap-2">
-      <button onclick="openNotesManagerModal()" class="h-8 px-2.5 rounded-lg glass-panel flex items-center justify-center gap-1.5 text-xs hover:border-amber-400 text-amber-300 font-bold transition relative" title="Quản lý Ghi Nhớ Tiết Học">
-        <span>📝</span>
-        <span class="text-[11px]">Ghi Nhớ</span>
-        <span id="notesCountBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[17px] h-4 px-1 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black flex items-center justify-center shadow-md">0</span>
-      </button>
-      <button onclick="toggleTheme()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Đổi giao diện Sáng/Tối">
-        <span id="themeIcon">☀️</span>
-      </button>
-      <button onclick="testBellSound()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Thử chuông báo tiết">
-        🔔
-      </button>
-      <button onclick="window.print()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="In thời khóa biểu">
-        🖨️
-      </button>
-      <button onclick="copyTodaySchedule()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Sao chép lịch hôm nay">
-        📋
-      </button>
-      <button onclick="openSettingsModal()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Cài đặt & Sao lưu">
-        ⚙️
-      </button>
+    <!-- HÀNG TIỆN ÍCH: ĐỒNG HỒ BÊN TRÁI, MENU BÊN PHẢI -->
+    <div class="flex items-center justify-between gap-2">
+      <!-- ĐỒNG HỒ THỜI GIAN THỰC (DI CHUYỂN LÊN ĐÂY) -->
+      <div class="h-8 px-2.5 rounded-lg glass-panel flex items-center gap-1.5 text-xs font-semibold text-cyan-500 dark:text-cyan-400 border border-cyan-500/30 shadow-inner shrink-0" title="Thời gian thực">
+        <span>⏱️</span>
+        <span id="liveClock" class="font-mono font-bold text-[11px] sm:text-xs">00:00:00</span>
+      </div>
+
+      <!-- KHUNG CÁC TÍNH NĂNG / TIỆN ÍCH (DI CHUYỂN QUA GÓC PHẢI) -->
+      <div class="flex items-center gap-1.5">
+        <button onclick="openNotesManagerModal()" class="h-8 px-2 sm:px-2.5 rounded-lg glass-panel flex items-center justify-center gap-1.5 text-xs hover:border-amber-400 text-amber-300 font-bold transition relative" title="Quản lý Ghi Nhớ Tiết Học">
+          <span>📝</span>
+          <span class="text-[11px] hidden sm:inline">Ghi Nhớ</span>
+          <span id="notesCountBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[17px] h-4 px-1 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black flex items-center justify-center shadow-md">0</span>
+        </button>
+        <button onclick="toggleTheme()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Đổi giao diện Sáng/Tối">
+          <span id="themeIcon">☀️</span>
+        </button>
+        <button onclick="testBellSound()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Thử chuông báo tiết">
+          🔔
+        </button>
+        <button onclick="window.print()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="In thời khóa biểu">
+          🖨️
+        </button>
+        <button onclick="copyTodaySchedule()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Sao chép lịch hôm nay">
+          📋
+        </button>
+        <button onclick="openSettingsModal()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Cài đặt & Sao lưu">
+          ⚙️
+        </button>
+      </div>
     </div>
   </div>
 
@@ -413,12 +422,7 @@
   <header class="header-card glass-panel rounded-2xl p-4 sm:p-5 shadow-2xl relative overflow-hidden">
     <div class="absolute top-0 left-1/4 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
 
-    <div class="flex items-center justify-between gap-2 mb-3">
-      <div class="flex items-center gap-2 bg-slate-900/80 dark:bg-slate-950/70 border border-cyan-500/30 px-2.5 py-1 rounded-full text-xs font-semibold text-cyan-400 tracking-wide shadow-inner">
-        <span>⏱️</span>
-        <span id="liveClock" class="font-mono">00:00:00</span>
-      </div>
-      
+    <div class="flex items-center justify-end gap-2 mb-2">
       <div id="todayBadge" class="bg-emerald-500/15 border border-emerald-400/40 text-emerald-400 text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase">
         Hôm nay
       </div>
