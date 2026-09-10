@@ -250,21 +250,63 @@
     /* Định dạng ô môn học */
     .cell-box {
       border-radius: 8px;
-      height: 32px;
+      min-height: 32px;
+      height: auto;
+      padding: 3px 4px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       font-size: 11.5px;
       font-weight: 700;
       letter-spacing: 0.25px;
-      transition: transform 0.12s, border-color 0.2s, background 0.2s;
+      transition: transform 0.12s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
       cursor: pointer;
       user-select: none;
       position: relative;
     }
 
     .cell-box:active {
-      transform: scale(0.95);
+      transform: scale(0.96);
+    }
+
+    /* Hiệu ứng ô có ghi nhớ */
+    .cell-box.has-note {
+      border-color: #f59e0b !important;
+      border-width: 1.5px !important;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(15, 23, 42, 0.95)) !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+    }
+
+    .cell-note-pill {
+      background: rgba(245, 158, 11, 0.25);
+      border: 1px solid rgba(245, 158, 11, 0.55);
+      color: #fde68a;
+      font-size: 9.5px;
+      line-height: 12px;
+      font-weight: 600;
+      padding: 1px 4px;
+      border-radius: 4px;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .light-theme .cell-box.has-note {
+      border-color: #d97706 !important;
+      background: linear-gradient(135deg, #fef3c7, #ffffff) !important;
+      box-shadow: 0 0 8px rgba(217, 119, 6, 0.25);
+    }
+
+    .light-theme .cell-note-pill {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      color: #92400e;
     }
 
     /* Môn học chuyên biệt */
@@ -318,6 +360,9 @@
         border: 1px solid #94a3b8 !important;
         color: #000000 !important;
       }
+      #timeSlotsContent, #colorLegendContent {
+        display: block !important;
+      }
     }
   </style>
 </head>
@@ -338,6 +383,11 @@
     </div>
     
     <div class="flex items-center gap-1.5">
+      <button onclick="openNotesManagerModal()" class="h-8 px-2 rounded-lg glass-panel flex items-center justify-center gap-1 text-xs hover:border-amber-400 text-amber-300 font-bold transition relative" title="Quản lý Ghi Nhớ Tiết Học">
+        <span>📝</span>
+        <span class="text-[11px] hidden sm:inline">Ghi Nhớ</span>
+        <span id="notesCountBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[17px] h-4 px-1 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black flex items-center justify-center shadow-md">0</span>
+      </button>
       <button onclick="toggleTheme()" class="w-8 h-8 rounded-lg glass-panel flex items-center justify-center text-xs hover:border-cyan-400 transition" title="Đổi giao diện Sáng/Tối">
         <span id="themeIcon">☀️</span>
       </button>
@@ -414,6 +464,24 @@
         --:--
       </span>
     </div>
+
+    <!-- Banner Ghi Nhớ cho tiết học đang diễn ra -->
+    <div id="currentNoteBanner" class="hidden mt-2.5 p-2.5 rounded-xl bg-amber-500/15 border border-amber-400/50 text-amber-200 text-xs shadow-lg space-y-1.5 backdrop-blur-sm">
+      <div class="flex items-center justify-between">
+        <span class="font-extrabold text-amber-300 text-[11px] flex items-center gap-1.5 uppercase tracking-wide">
+          <span>📌</span> GHI NHỚ TIẾT NÀY
+        </span>
+        <div class="flex items-center gap-1">
+          <button onclick="completeCurrentNote()" class="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 border border-emerald-400/40 text-[10px] font-bold transition flex items-center gap-1" title="Đánh dấu đã hoàn thành phần này">
+            ✓ Đã Dạy Xong
+          </button>
+          <button onclick="dismissCurrentNotePrompt()" class="w-5 h-5 rounded flex items-center justify-center text-amber-400 hover:text-white text-xs" title="Ẩn tạm thời">
+            ✕
+          </button>
+        </div>
+      </div>
+      <div id="currentNoteText" class="text-xs font-semibold text-white pl-4 break-words"></div>
+    </div>
   </header>
 
   <div class="no-print flex items-center gap-2">
@@ -433,129 +501,147 @@
   <!-- DANH SÁCH THẺ NGÀY HỌC (RENDER DYNAMIC) -->
   <main id="scheduleContainer" class="flex flex-col gap-2.5"></main>
 
-  <!-- KHUNG GIỜ TIẾT HỌC CHUẨN MỚI -->
-  <section class="glass-panel rounded-2xl p-3.5 sm:p-4 text-xs">
-    <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-cyan-500/20">
-      <div class="flex items-center gap-1.5 font-bold text-cyan-400 uppercase">
-        <span>⏰</span> Khung Giờ Tiết Học
+  <!-- KHUNG GIỜ TIẾT HỌC CHUẨN MỚI (MẶC ĐỊNH CUỘN GỌN) -->
+  <section class="glass-panel rounded-2xl p-3 sm:p-4 text-xs transition-all">
+    <div onclick="toggleSection('timeSlotsContent', 'timeSlotsIcon', 'timeSlotsBtnText')" class="flex items-center justify-between cursor-pointer select-none group py-0.5" title="Chạm để mở rộng hoặc thu gọn khung giờ tiết học">
+      <div class="flex items-center gap-2 font-bold text-cyan-400 uppercase tracking-wide">
+        <span>⏰</span>
+        <span>Khung Giờ Tiết Học</span>
       </div>
-      <div class="text-[10px] text-slate-400 italic">
-        * Chạm vào ô bất kỳ để chỉnh sửa môn
+      <div class="flex items-center gap-1 text-[10px] text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2.5 py-1 rounded-lg group-hover:border-cyan-400 group-hover:text-white transition shadow-sm">
+        <span id="timeSlotsBtnText" class="font-semibold">Mở rộng</span>
+        <span id="timeSlotsIcon" class="font-bold text-xs">▼</span>
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 text-[11px]">
-      <!-- Buổi Sáng: 5 Tiết, ra chơi 30 phút sau tiết 2 -->
-      <div class="space-y-1.5 bg-slate-900/40 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-800">
-        <div class="font-extrabold text-cyan-400 tracking-wider flex items-center justify-between mb-1">
-          <span>BUỔI SÁNG</span>
-          <span class="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded">5 Tiết</span>
-        </div>
-        <div class="flex justify-between text-slate-300"><span>Tiết 1:</span><strong class="font-mono text-cyan-200">07:00 - 07:45</strong></div>
-        <div class="flex justify-between text-slate-300"><span>Tiết 2:</span><strong class="font-mono text-cyan-200">07:50 - 08:35</strong></div>
-        <div class="flex justify-between text-amber-400/90 text-[10px] italic py-0.5 border-y border-slate-800/80">
-          <span>Ra chơi:</span><span class="font-mono font-semibold">08:35 - 09:05 (30p)</span>
-        </div>
-        <div class="flex justify-between text-slate-300"><span>Tiết 3:</span><strong class="font-mono text-cyan-200">09:05 - 09:50</strong></div>
-        <div class="flex justify-between text-slate-300"><span>Tiết 4:</span><strong class="font-mono text-cyan-200">09:55 - 10:40</strong></div>
-        <div class="flex justify-between text-slate-300"><span>Tiết 5:</span><strong class="font-mono text-cyan-200">10:45 - 11:30</strong></div>
+    <!-- Nội dung khung giờ (Mặc định cuộn gọn) -->
+    <div id="timeSlotsContent" class="hidden mt-3 pt-3 border-t border-cyan-500/20 space-y-2.5">
+      <div class="text-[10px] text-slate-400 italic text-right">
+        * Chạm vào ô bất kỳ trên TKB để chỉnh sửa môn
       </div>
 
-      <!-- Buổi Chiều: 3 Tiết, ra chơi 30 phút sau tiết 2 -->
-      <div class="space-y-1.5 bg-slate-900/40 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-800">
-        <div class="font-extrabold text-cyan-400 tracking-wider flex items-center justify-between mb-1">
-          <span>BUỔI CHIỀU</span>
-          <span class="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded">3 Tiết</span>
+      <div class="grid grid-cols-2 gap-3 text-[11px]">
+        <!-- Buổi Sáng: 5 Tiết, ra chơi 30 phút sau tiết 2 -->
+        <div class="space-y-1.5 bg-slate-900/40 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-800">
+          <div class="font-extrabold text-cyan-400 tracking-wider flex items-center justify-between mb-1">
+            <span>BUỔI SÁNG</span>
+            <span class="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded">5 Tiết</span>
+          </div>
+          <div class="flex justify-between text-slate-300"><span>Tiết 1:</span><strong class="font-mono text-cyan-200">07:00 - 07:45</strong></div>
+          <div class="flex justify-between text-slate-300"><span>Tiết 2:</span><strong class="font-mono text-cyan-200">07:50 - 08:35</strong></div>
+          <div class="flex justify-between text-amber-400/90 text-[10px] italic py-0.5 border-y border-slate-800/80">
+            <span>Ra chơi:</span><span class="font-mono font-semibold">08:35 - 09:05 (30p)</span>
+          </div>
+          <div class="flex justify-between text-slate-300"><span>Tiết 3:</span><strong class="font-mono text-cyan-200">09:05 - 09:50</strong></div>
+          <div class="flex justify-between text-slate-300"><span>Tiết 4:</span><strong class="font-mono text-cyan-200">09:55 - 10:40</strong></div>
+          <div class="flex justify-between text-slate-300"><span>Tiết 5:</span><strong class="font-mono text-cyan-200">10:45 - 11:30</strong></div>
         </div>
-        <div class="flex justify-between text-slate-300"><span>Tiết 1:</span><strong class="font-mono text-cyan-200">14:00 - 14:45</strong></div>
-        <div class="flex justify-between text-slate-300"><span>Tiết 2:</span><strong class="font-mono text-cyan-200">14:50 - 15:35</strong></div>
-        <div class="flex justify-between text-amber-400/90 text-[10px] italic py-0.5 border-y border-slate-800/80">
-          <span>Ra chơi:</span><span class="font-mono font-semibold">15:35 - 16:05 (30p)</span>
+
+        <!-- Buổi Chiều: 3 Tiết, ra chơi 30 phút sau tiết 2 -->
+        <div class="space-y-1.5 bg-slate-900/40 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-800">
+          <div class="font-extrabold text-cyan-400 tracking-wider flex items-center justify-between mb-1">
+            <span>BUỔI CHIỀU</span>
+            <span class="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded">3 Tiết</span>
+          </div>
+          <div class="flex justify-between text-slate-300"><span>Tiết 1:</span><strong class="font-mono text-cyan-200">14:00 - 14:45</strong></div>
+          <div class="flex justify-between text-slate-300"><span>Tiết 2:</span><strong class="font-mono text-cyan-200">14:50 - 15:35</strong></div>
+          <div class="flex justify-between text-amber-400/90 text-[10px] italic py-0.5 border-y border-slate-800/80">
+            <span>Ra chơi:</span><span class="font-mono font-semibold">15:35 - 16:05 (30p)</span>
+          </div>
+          <div class="flex justify-between text-slate-300"><span>Tiết 3:</span><strong class="font-mono text-cyan-200">16:05 - 16:50</strong></div>
         </div>
-        <div class="flex justify-between text-slate-300"><span>Tiết 3:</span><strong class="font-mono text-cyan-200">16:05 - 16:50</strong></div>
       </div>
     </div>
   </section>
 
-  <!-- CHÚ THÍCH MÀU SẮC MÔN HỌC (10 MÔN CHUẨN) -->
-  <section class="glass-panel rounded-2xl p-3 sm:p-4 text-xs">
-    <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-cyan-500/20">
-      <div class="flex items-center gap-1.5 font-bold text-cyan-400 uppercase tracking-wide">
-        <span>🎨</span> Bảng Màu & Chú Thích Môn Học
+  <!-- CHÚ THÍCH MÀU SẮC MÔN HỌC (MẶC ĐỊNH CUỘN GỌN) -->
+  <section class="glass-panel rounded-2xl p-3 sm:p-4 text-xs transition-all">
+    <div onclick="toggleSection('colorLegendContent', 'colorLegendIcon', 'colorLegendBtnText')" class="flex items-center justify-between cursor-pointer select-none group py-0.5" title="Chạm để mở rộng hoặc thu gọn bảng màu môn học">
+      <div class="flex items-center gap-2 font-bold text-cyan-400 uppercase tracking-wide">
+        <span>🎨</span>
+        <span>Bảng Màu & Chú Thích Môn Học</span>
       </div>
-      <div class="text-[10px] text-slate-400 font-medium">10 môn chuẩn phân màu</div>
+      <div class="flex items-center gap-1 text-[10px] text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2.5 py-1 rounded-lg group-hover:border-cyan-400 group-hover:text-white transition shadow-sm">
+        <span id="colorLegendBtnText" class="font-semibold">Mở rộng</span>
+        <span id="colorLegendIcon" class="font-bold text-xs">▼</span>
+      </div>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
-      <!-- 1. KHTN -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-emerald-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-emerald-500/30 border border-emerald-400"></span>
-        <span class="truncate"><strong class="text-emerald-300">KHTN:</strong> Khoa học tự nhiên</span>
-      </div>
+    <!-- Nội dung bảng màu (Mặc định cuộn gọn) -->
+    <div id="colorLegendContent" class="hidden mt-3 pt-3 border-t border-cyan-500/20 space-y-2">
+      <div class="text-[10px] text-slate-400 font-medium pb-1">10 môn chuẩn phân màu</div>
 
-      <!-- 2. GDCD -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-orange-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-orange-500/30 border border-orange-400"></span>
-        <span class="truncate"><strong class="text-orange-300">GDCD:</strong> Giáo dục công dân</span>
-      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+        <!-- 1. KHTN -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-emerald-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-emerald-500/30 border border-emerald-400"></span>
+          <span class="truncate"><strong class="text-emerald-300">KHTN:</strong> Khoa học tự nhiên</span>
+        </div>
 
-      <!-- 3. GDTC -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-red-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-red-500/30 border border-red-400"></span>
-        <span class="truncate"><strong class="text-red-300">GDTC:</strong> Giáo dục thể chất</span>
-      </div>
+        <!-- 2. GDCD -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-orange-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-orange-500/30 border border-orange-400"></span>
+          <span class="truncate"><strong class="text-orange-300">GDCD:</strong> Giáo dục công dân</span>
+        </div>
 
-      <!-- 4. NT -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-pink-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-pink-500/30 border border-pink-400"></span>
-        <span class="truncate"><strong class="text-pink-300">NT:</strong> Nghệ thuật</span>
-      </div>
+        <!-- 3. GDTC -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-red-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-red-500/30 border border-red-400"></span>
+          <span class="truncate"><strong class="text-red-300">GDTC:</strong> Giáo dục thể chất</span>
+        </div>
 
-      <!-- 5. GDĐP -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-lime-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-lime-500/30 border border-lime-400"></span>
-        <span class="truncate"><strong class="text-lime-300">GDĐP:</strong> GD địa phương</span>
-      </div>
+        <!-- 4. NT -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-pink-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-pink-500/30 border border-pink-400"></span>
+          <span class="truncate"><strong class="text-pink-300">NT:</strong> Nghệ thuật</span>
+        </div>
 
-      <!-- 6. T -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-indigo-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-indigo-500/30 border border-indigo-400"></span>
-        <span class="truncate"><strong class="text-indigo-300">T:</strong> Toán</span>
-      </div>
+        <!-- 5. GDĐP -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-lime-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-lime-500/30 border border-lime-400"></span>
+          <span class="truncate"><strong class="text-lime-300">GDĐP:</strong> GD địa phương</span>
+        </div>
 
-      <!-- 7. NV -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-purple-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-purple-500/30 border border-purple-400"></span>
-        <span class="truncate"><strong class="text-purple-300">NV:</strong> Ngữ Văn</span>
-      </div>
+        <!-- 6. T -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-indigo-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-indigo-500/30 border border-indigo-400"></span>
+          <span class="truncate"><strong class="text-indigo-300">T:</strong> Toán</span>
+        </div>
 
-      <!-- 8. TA -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-cyan-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-cyan-500/30 border border-cyan-400"></span>
-        <span class="truncate"><strong class="text-cyan-300">TA:</strong> Tiếng Anh</span>
-      </div>
+        <!-- 7. NV -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-purple-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-purple-500/30 border border-purple-400"></span>
+          <span class="truncate"><strong class="text-purple-300">NV:</strong> Ngữ Văn</span>
+        </div>
 
-      <!-- 9. LS-ĐL -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-amber-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-amber-500/30 border border-amber-400"></span>
-        <span class="truncate"><strong class="text-amber-300">LS-ĐL:</strong> Lịch sử - Địa Lý</span>
-      </div>
+        <!-- 8. TA -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-cyan-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-cyan-500/30 border border-cyan-400"></span>
+          <span class="truncate"><strong class="text-cyan-300">TA:</strong> Tiếng Anh</span>
+        </div>
 
-      <!-- 10. TH -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-blue-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-blue-500/30 border border-blue-400"></span>
-        <span class="truncate"><strong class="text-blue-300">TH:</strong> Tin học</span>
-      </div>
+        <!-- 9. LS-ĐL -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-amber-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-amber-500/30 border border-amber-400"></span>
+          <span class="truncate"><strong class="text-amber-300">LS-ĐL:</strong> Lịch sử - Địa Lý</span>
+        </div>
 
-      <!-- Các môn khác -->
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-teal-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-teal-500/30 border border-teal-400"></span>
-        <span class="truncate"><strong class="text-teal-300">CN:</strong> Công nghệ</span>
-      </div>
+        <!-- 10. TH -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-blue-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-blue-500/30 border border-blue-400"></span>
+          <span class="truncate"><strong class="text-blue-300">TH:</strong> Tin học</span>
+        </div>
 
-      <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-sky-500/25">
-        <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-sky-500/30 border border-sky-400"></span>
-        <span class="truncate"><strong class="text-sky-300">HN:</strong> Hướng nghiệp</span>
+        <!-- Các môn khác -->
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-teal-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-teal-500/30 border border-teal-400"></span>
+          <span class="truncate"><strong class="text-teal-300">CN:</strong> Công nghệ</span>
+        </div>
+
+        <div class="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/40 dark:bg-slate-950/40 border border-sky-500/25">
+          <span class="w-3.5 h-3.5 rounded-md flex-shrink-0 bg-sky-500/30 border border-sky-400"></span>
+          <span class="truncate"><strong class="text-sky-300">HN:</strong> Hướng nghiệp</span>
+        </div>
       </div>
     </div>
   </section>
@@ -598,6 +684,33 @@
         <button type="button" class="quick-tag bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-600/40 px-2 py-1 rounded-lg text-xs font-semibold transition" onclick="setQuickTag('CC')">CC</button>
         <button type="button" class="quick-tag bg-yellow-950/50 hover:bg-yellow-900/60 text-yellow-300 border border-yellow-600/40 px-2 py-1 rounded-lg text-xs font-semibold transition" onclick="setQuickTag('SHL 6A6')">SHL 6A6</button>
       </div>
+    </div>
+
+    <!-- KHỐI GHI NHỚ CHO TIẾT HỌC -->
+    <div class="pt-2 border-t border-slate-800 space-y-2">
+      <div class="flex items-center justify-between">
+        <label class="text-[11px] uppercase font-extrabold text-amber-300 flex items-center gap-1.5">
+          <span>📝</span> Ghi Nhớ Tiết Này:
+        </label>
+        <button type="button" id="btnDeleteCellNote" onclick="deleteCurrentCellNote()" class="hidden text-[10px] text-rose-400 hover:text-rose-300 underline font-semibold">
+          Xóa ghi nhớ
+        </button>
+      </div>
+
+      <textarea id="cellNoteInput" rows="2" class="w-full text-xs bg-slate-950/80 border border-amber-500/40 rounded-xl p-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Ví dụ: Kiểm tra 15p, dạy tiếp bài 5 trang 32..."></textarea>
+
+      <!-- Gợi ý nhanh ghi nhớ -->
+      <div class="flex flex-wrap gap-1">
+        <button type="button" onclick="appendCellNote('Kiểm tra 15 phút')" class="text-[9.5px] px-1.5 py-0.5 rounded bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border border-amber-600/30">Kiểm tra 15p</button>
+        <button type="button" onclick="appendCellNote('Dạy tiếp bài mới')" class="text-[9.5px] px-1.5 py-0.5 rounded bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border border-amber-600/30">Dạy bài mới</button>
+        <button type="button" onclick="appendCellNote('Sửa bài tập về nhà')" class="text-[9.5px] px-1.5 py-0.5 rounded bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border border-amber-600/30">Sửa bài tập</button>
+        <button type="button" onclick="appendCellNote('Thực hành')" class="text-[9.5px] px-1.5 py-0.5 rounded bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border border-amber-600/30">Thực hành</button>
+      </div>
+
+      <!-- Nút chuyển ghi nhớ sang tiết tiếp theo của môn này -->
+      <button type="button" onclick="forwardNoteToNextPeriod()" class="w-full py-2 px-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/50 text-amber-300 font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
+        <span>⏩</span> Gửi ghi nhớ này sang tiết tiếp theo của môn này
+      </button>
     </div>
 
     <!-- Nút hành động -->
@@ -669,6 +782,84 @@
     <div class="flex gap-2 pt-2 border-t border-slate-800">
       <button onclick="closeSettingsModal()" class="w-full py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20">
         Lưu Cài Đặt
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 4: QUẢN LÝ GHI NHỚ TOÀN DIỆN -->
+<div id="notesModal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
+  <div class="glass-panel bg-slate-900 border-amber-500/40 rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+    <!-- Header Modal -->
+    <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+      <div class="flex items-center gap-2">
+        <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-400/30 flex items-center justify-center text-base">
+          📝
+        </span>
+        <div>
+          <h3 class="font-black text-sm text-white uppercase tracking-wider">Quản Lý Ghi Nhớ Tiết Học</h3>
+          <p id="notesModalWeekSub" class="text-[10px] text-amber-300/80">Lên kế hoạch & dặn dò cho tiết tiếp theo của từng môn / lớp</p>
+        </div>
+      </div>
+      <button onclick="closeNotesModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center text-sm font-bold">✕</button>
+    </div>
+
+    <!-- KHỐI 1: THÊM GHI NHỚ NHANH CHO TIẾT TIẾP THEO -->
+    <div class="bg-slate-950/60 p-3 rounded-xl border border-amber-500/30 space-y-2.5">
+      <div class="text-[11px] font-extrabold text-amber-300 uppercase tracking-wide flex items-center gap-1">
+        <span>⚡</span> Thêm Ghi Nhớ Cho Tiết Tiếp Theo
+      </div>
+
+      <!-- Chọn môn học -->
+      <div>
+        <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">1. Chọn Môn / Lớp:</label>
+        <select id="quickNoteSubjectSelect" onchange="onQuickNoteSubjectChange()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs font-bold text-white focus:outline-none focus:border-amber-400">
+        </select>
+      </div>
+
+      <!-- Thông tin tiết kế tiếp tự động tính toán -->
+      <div id="quickNextPeriodPreview" class="p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 text-xs flex items-center justify-between text-cyan-200">
+        <span>Đang tính toán tiết tiếp theo...</span>
+      </div>
+
+      <!-- Nội dung ghi nhớ -->
+      <div>
+        <label class="block text-[10px] text-slate-400 font-bold uppercase mb-1">2. Nội Dung Cần Dạy Cho Tiết Đó:</label>
+        <textarea id="quickNoteTextInput" rows="2" class="w-full bg-slate-900 border border-amber-500/40 rounded-xl p-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400" placeholder="Ví dụ: Kiểm tra 15 phút, dạy tiếp bài 5 trang 32..."></textarea>
+      </div>
+
+      <!-- Gợi ý nhanh -->
+      <div class="flex flex-wrap gap-1">
+        <button type="button" onclick="setQuickNoteText('Kiểm tra 15 phút')" class="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">Kiểm tra 15p</button>
+        <button type="button" onclick="setQuickNoteText('Dạy bài mới')" class="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">Dạy bài mới</button>
+        <button type="button" onclick="setQuickNoteText('Sửa bài tập về nhà')" class="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">Sửa bài tập</button>
+        <button type="button" onclick="setQuickNoteText('Thực hành / Thí nghiệm')" class="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">Thực hành</button>
+      </div>
+
+      <button onclick="saveQuickNextNoteFromModal()" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-1.5">
+        <span>💾</span> Lưu Ghi Nhớ Vào Tiết Tiếp Theo
+      </button>
+    </div>
+
+    <!-- KHỐI 2: DANH SÁCH GHI NHỚ HIỆN CÓ -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <div class="text-[11px] font-extrabold text-slate-300 uppercase tracking-wide flex items-center gap-1">
+          <span>📋</span> Danh Sách Ghi Nhớ Hiện Có (<span id="notesListCount">0</span>)
+        </div>
+        <button onclick="clearAllNotesPrompt()" id="btnClearAllNotes" class="hidden text-[10px] text-rose-400 hover:text-rose-300 underline font-semibold">
+          Xóa tất cả
+        </button>
+      </div>
+
+      <div id="notesListContainer" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+      </div>
+    </div>
+
+    <!-- Đóng -->
+    <div class="pt-2 border-t border-slate-800">
+      <button onclick="closeNotesModal()" class="w-full py-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-700 transition">
+        Đóng
       </button>
     </div>
   </div>
@@ -763,14 +954,25 @@
     { session: 'chieu', period: 2, label: 'Tiết 3 Chiều', start: 16*60 + 5,  end: 16*60 + 50 }
   ];
 
-  const STORAGE_DATA_KEY = "tkb_t1_storage_data_v2";
+  const STORAGE_DATA_KEY = "tkb_t1_storage_data_v2"; // Legacy single week
   const STORAGE_CONFIG_KEY = "tkb_t1_config_v2";
+  const STORAGE_NOTES_KEY = "tkb_t1_notes_v2"; // Legacy single week notes
+  const STORAGE_WEEKS_SCHEDULE_KEY = "tkb_weeks_schedule_v3";
+  const STORAGE_WEEKS_NOTES_KEY = "tkb_weeks_notes_v3";
 
   // Mốc Tuần 1: Thứ Hai, ngày 07 tháng 09 năm 2026
   const BASE_START_DATE = new Date(2026, 8, 7, 0, 0, 0, 0); // Tháng 8 = Tháng 9
-  let weekOffset = 0; // 0 = Tuần 1 (theo mốc 07/09/2026)
+  let weekOffset = 0; // 0 = Tuần realtime
 
+  // Kho dữ liệu lưu trữ theo từng tuần
+  let schedulesByWeek = {};
+  let notesByWeek = {};
+
+  // Dữ liệu hoạt động của tuần hiện đang hiển thị
   let scheduleData = [];
+  let notesData = {};
+  let dismissedNotes = {};
+  let selectedNextSlot = null;
   let viewMode = 'all'; // 'all' hoặc 'today'
   let currentEdit = null;
   let appConfig = {
@@ -779,6 +981,233 @@
     autoWeek: true,
     theme: "dark"
   };
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function getCurrentViewingWeekNumber() {
+    const info = getAcademicWeekInfo(weekOffset);
+    return info.weekNumber;
+  }
+
+  function getRealtimeWeekNumber() {
+    const info = getAcademicWeekInfo(0);
+    return info.weekNumber;
+  }
+
+  function saveWeeksScheduleToStorage() {
+    localStorage.setItem(STORAGE_WEEKS_SCHEDULE_KEY, JSON.stringify(schedulesByWeek));
+  }
+
+  function saveWeeksNotesToStorage() {
+    localStorage.setItem(STORAGE_WEEKS_NOTES_KEY, JSON.stringify(notesByWeek));
+  }
+
+  // Lấy TKB của tuần cụ thể. Nếu chưa có, kế thừa từ tuần gần nhất trước đó
+  function getScheduleForWeek(weekNum) {
+    const key = String(weekNum);
+    if (schedulesByWeek[key] && Array.isArray(schedulesByWeek[key])) {
+      return schedulesByWeek[key];
+    }
+
+    // Tìm tuần trước đó gần nhất đã lưu
+    let baseSchedule = null;
+    for (let w = weekNum - 1; w >= 1; w--) {
+      if (schedulesByWeek[String(w)] && Array.isArray(schedulesByWeek[String(w)])) {
+        baseSchedule = schedulesByWeek[String(w)];
+        break;
+      }
+    }
+
+    if (!baseSchedule) {
+      baseSchedule = DEFAULT_SCHEDULE;
+    }
+
+    // Clone sâu để tuần mới hoàn toàn độc lập, thay đổi không làm ảnh hưởng tuần trước
+    const cloned = JSON.parse(JSON.stringify(baseSchedule));
+    schedulesByWeek[key] = cloned;
+    saveWeeksScheduleToStorage();
+    return cloned;
+  }
+
+  // Lấy ghi nhớ của tuần cụ thể
+  function getNotesForWeek(weekNum) {
+    const key = String(weekNum);
+    if (!notesByWeek[key]) {
+      notesByWeek[key] = {};
+    }
+    return notesByWeek[key];
+  }
+
+  // Tải dữ liệu tuần đang xem vào scheduleData và notesData
+  function loadViewingWeekData() {
+    const weekNum = getCurrentViewingWeekNumber();
+    scheduleData = getScheduleForWeek(weekNum);
+    notesData = getNotesForWeek(weekNum);
+  }
+
+  function getAllWeeklySlots(targetSchedule = null) {
+    const sData = targetSchedule || scheduleData;
+    const slots = [];
+    for (let dayIdx = 0; dayIdx < sData.length; dayIdx++) {
+      const day = sData[dayIdx];
+      for (let pIdx = 0; pIdx < 5; pIdx++) {
+        slots.push({
+          dayIdx,
+          dayId: day.dayId,
+          dayName: day.name,
+          session: 'sang',
+          sessionName: 'Buổi Sáng',
+          pIdx,
+          periodNumber: pIdx + 1,
+          subject: (day.periods[pIdx] && day.periods[pIdx].sang) || "—",
+          key: `${dayIdx}_${pIdx}_sang`
+        });
+      }
+      for (let pIdx = 0; pIdx < 3; pIdx++) {
+        slots.push({
+          dayIdx,
+          dayId: day.dayId,
+          dayName: day.name,
+          session: 'chieu',
+          sessionName: 'Buổi Chiều',
+          pIdx,
+          periodNumber: pIdx + 1,
+          subject: (day.periods[pIdx] && day.periods[pIdx].chieu) || "—",
+          key: `${dayIdx}_${pIdx}_chieu`
+        });
+      }
+    }
+    return slots;
+  }
+
+  function getDistinctSubjects(targetSchedule = null) {
+    const allSlots = getAllWeeklySlots(targetSchedule);
+    const subjectsMap = new Map();
+    allSlots.forEach(s => {
+      const sub = s.subject ? s.subject.trim() : "";
+      if (sub && sub !== "—" && sub !== "-") {
+        const key = sub.toUpperCase();
+        if (!subjectsMap.has(key)) {
+          subjectsMap.set(key, sub);
+        }
+      }
+    });
+    return Array.from(subjectsMap.values()).sort();
+  }
+
+  // Tìm tiết tiếp theo của môn học (xét tuần hiện tại trước, nếu hết tiết thì chuyển sang tuần sau)
+  function findNextSlotForSubject(targetSubject, fromSlot = null, fromWeekNum = null) {
+    if (!targetSubject || targetSubject === "—") return null;
+    const cleanTarget = targetSubject.trim().toUpperCase();
+    const currentWeekNum = fromWeekNum || getCurrentViewingWeekNumber();
+    const curWeekSchedule = getScheduleForWeek(currentWeekNum);
+    const allSlotsCurWeek = getAllWeeklySlots(curWeekSchedule);
+
+    let startIndex = -1;
+    if (fromSlot) {
+      startIndex = allSlotsCurWeek.findIndex(s => 
+        s.dayIdx === fromSlot.dayIdx && 
+        s.pIdx === fromSlot.pIdx && 
+        s.session === fromSlot.session
+      );
+    }
+    
+    if (startIndex === -1) {
+      const now = new Date();
+      const todayDay = now.getDay();
+      const dayIdx = (todayDay >= 1 && todayDay <= 5) ? (todayDay - 1) : 0;
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const curSession = nowMinutes >= 13 * 60 ? 'chieu' : 'sang';
+      startIndex = allSlotsCurWeek.findIndex(s => s.dayIdx === dayIdx && s.session === curSession);
+      if (startIndex === -1) startIndex = 0;
+    }
+
+    // 1. Tìm trong các tiết tiếp theo của TUẦN HIỆN TẠI
+    for (let i = startIndex + 1; i < allSlotsCurWeek.length; i++) {
+      const candidate = allSlotsCurWeek[i];
+      if (candidate.subject && candidate.subject.trim().toUpperCase() === cleanTarget) {
+        return {
+          ...candidate,
+          isNextWeek: false,
+          targetWeekNumber: currentWeekNum
+        };
+      }
+    }
+
+    // 2. Nếu trong tuần hiện tại không còn -> Tìm trong TUẦN TIẾP THEO
+    const nextWeekNum = currentWeekNum + 1;
+    const nextWeekSchedule = getScheduleForWeek(nextWeekNum);
+    const allSlotsNextWeek = getAllWeeklySlots(nextWeekSchedule);
+
+    for (let i = 0; i < allSlotsNextWeek.length; i++) {
+      const candidate = allSlotsNextWeek[i];
+      if (candidate.subject && candidate.subject.trim().toUpperCase() === cleanTarget) {
+        return {
+          ...candidate,
+          isNextWeek: true,
+          targetWeekNumber: nextWeekNum
+        };
+      }
+    }
+
+    // 3. Fallback: Nếu tuần sau chưa đổi hoặc chưa có, dùng slot đầu tiên của tuần này cho tuần sau
+    const fallbackSlot = allSlotsCurWeek.find(s => s.subject && s.subject.trim().toUpperCase() === cleanTarget);
+    if (fallbackSlot) {
+      return {
+        ...fallbackSlot,
+        isNextWeek: true,
+        targetWeekNumber: nextWeekNum
+      };
+    }
+
+    return null;
+  }
+
+  function updateNotesBadge() {
+    const keys = Object.keys(notesData).filter(k => notesData[k] && notesData[k].text && notesData[k].text.trim() !== "");
+    const badge = document.getElementById("notesCountBadge");
+    if (badge) {
+      if (keys.length > 0) {
+        badge.innerText = keys.length;
+        badge.classList.remove("hidden");
+        badge.classList.add("flex");
+      } else {
+        badge.classList.add("hidden");
+        badge.classList.remove("flex");
+      }
+    }
+    const listCount = document.getElementById("notesListCount");
+    if (listCount) listCount.innerText = keys.length;
+    const btnClear = document.getElementById("btnClearAllNotes");
+    if (btnClear) btnClear.classList.toggle("hidden", keys.length === 0);
+  }
+
+  function renderCellContent(subject, key) {
+    const note = notesData[key];
+    const hasNote = !!(note && note.text && note.text.trim() !== "");
+    if (!hasNote) {
+      return `<span>${subject}</span>`;
+    }
+    const cleanNote = escapeHtml(note.text);
+    return `
+      <div class="flex items-center justify-center gap-1 w-full">
+        <span class="truncate">${subject}</span>
+        <span class="text-[10px] flex-shrink-0 animate-bounce" title="Ghi nhớ: ${cleanNote}">📝</span>
+      </div>
+      <div class="cell-note-pill" title="Ghi nhớ: ${cleanNote}">
+        <span>📌</span>
+        <span class="truncate">${cleanNote}</span>
+      </div>
+    `;
+  }
 
   function getAcademicWeekInfo(offset = 0) {
     const now = new Date();
@@ -896,6 +1325,13 @@
 
       let rowsHtml = "";
       day.periods.forEach((p, pIdx) => {
+        const sangKey = `${dayIdx}_${pIdx}_sang`;
+        const chieuKey = `${dayIdx}_${pIdx}_chieu`;
+        const sangNote = notesData[sangKey];
+        const chieuNote = notesData[chieuKey];
+        const sangHasNote = !!(sangNote && sangNote.text && sangNote.text.trim() !== "");
+        const chieuHasNote = !!(chieuNote && chieuNote.text && chieuNote.text.trim() !== "");
+
         const sangCls = getSubjectClass(p.sang);
         const chieuCls = getSubjectClass(p.chieu);
 
@@ -903,21 +1339,21 @@
         const isCurrentAfternoon = isToday && activeInfo.isActiveSchool && !activeInfo.isBreak && activeInfo.session === 'chieu' && activeInfo.periodIdx === pIdx;
 
         rowsHtml += `
-          <div class="grid grid-cols-[24px_1fr_1fr] gap-1.5 sm:gap-2 mb-1.5 items-center last:mb-0">
-            <div class="text-center font-bold text-[11px] text-slate-400">${pIdx + 1}</div>
+          <div class="grid grid-cols-[24px_1fr_1fr] gap-1.5 sm:gap-2 mb-1.5 items-stretch last:mb-0">
+            <div class="flex items-center justify-center font-bold text-[11px] text-slate-400">${pIdx + 1}</div>
             <div 
-              class="cell-box ${sangCls} ${isCurrentMorning ? 'active-period-box' : ''}" 
+              class="cell-box ${sangCls} ${sangHasNote ? 'has-note' : ''} ${isCurrentMorning ? 'active-period-box' : ''}" 
               onclick="openEdit(${dayIdx}, ${pIdx}, 'sang')"
-              title="Nhấn để đổi môn: Tiết ${pIdx + 1} Sáng"
+              title="${sangHasNote ? 'Ghi nhớ: ' + escapeHtml(sangNote.text) + ' • Nhấn để chỉnh sửa' : 'Nhấn để đổi môn: Tiết ' + (pIdx + 1) + ' Sáng'}"
             >
-              ${p.sang}
+              ${renderCellContent(p.sang, sangKey)}
             </div>
             <div 
-              class="cell-box ${chieuCls} ${isCurrentAfternoon ? 'active-period-box' : ''}" 
+              class="cell-box ${chieuCls} ${chieuHasNote ? 'has-note' : ''} ${isCurrentAfternoon ? 'active-period-box' : ''}" 
               onclick="openEdit(${dayIdx}, ${pIdx}, 'chieu')"
-              title="Nhấn để đổi môn: Tiết ${pIdx + 1} Chiều"
+              title="${chieuHasNote ? 'Ghi nhớ: ' + escapeHtml(chieuNote.text) + ' • Nhấn để chỉnh sửa' : 'Nhấn để đổi môn: Tiết ' + (pIdx + 1) + ' Chiều'}"
             >
-              ${p.chieu}
+              ${renderCellContent(p.chieu, chieuKey)}
             </div>
           </div>
         `;
@@ -956,22 +1392,62 @@
       console.warn("Lỗi đọc config:", e);
     }
 
+    // 1. Tải kho TKB theo từng tuần (schedulesByWeek)
     try {
-      const savedData = localStorage.getItem(STORAGE_DATA_KEY);
-      if (savedData) {
-        scheduleData = JSON.parse(savedData);
+      const savedWeeksSchedule = localStorage.getItem(STORAGE_WEEKS_SCHEDULE_KEY);
+      if (savedWeeksSchedule) {
+        schedulesByWeek = JSON.parse(savedWeeksSchedule);
       } else {
-        scheduleData = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+        schedulesByWeek = {};
+        // Migration từ STORAGE_DATA_KEY cũ nếu có
+        const legacyData = localStorage.getItem(STORAGE_DATA_KEY);
+        if (legacyData) {
+          try {
+            schedulesByWeek["1"] = JSON.parse(legacyData);
+          } catch(e) {
+            schedulesByWeek["1"] = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+          }
+        } else {
+          schedulesByWeek["1"] = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+        }
+        saveWeeksScheduleToStorage();
       }
     } catch (e) {
-      scheduleData = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+      schedulesByWeek = { "1": JSON.parse(JSON.stringify(DEFAULT_SCHEDULE)) };
     }
 
+    // 2. Tải kho ghi nhớ theo từng tuần (notesByWeek)
+    try {
+      const savedWeeksNotes = localStorage.getItem(STORAGE_WEEKS_NOTES_KEY);
+      if (savedWeeksNotes) {
+        notesByWeek = JSON.parse(savedWeeksNotes);
+      } else {
+        notesByWeek = {};
+        // Migration từ STORAGE_NOTES_KEY cũ nếu có
+        const legacyNotes = localStorage.getItem(STORAGE_NOTES_KEY);
+        if (legacyNotes) {
+          try {
+            notesByWeek["1"] = JSON.parse(legacyNotes);
+          } catch(e) {
+            notesByWeek["1"] = {};
+          }
+        } else {
+          notesByWeek["1"] = {};
+        }
+        saveWeeksNotesToStorage();
+      }
+    } catch (e) {
+      notesByWeek = {};
+    }
+
+    loadViewingWeekData();
     applyConfigUI();
     renderSchedule();
+    updateNotesBadge();
     updateClockAndPeriod();
     setInterval(updateClockAndPeriod, 1000);
-    showToast("Đang hiển thị Thời Khóa Biểu Tuần 1!", "📅");
+    const currentWeekNum = getCurrentViewingWeekNumber();
+    showToast(`Đang hiển thị Thời Khóa Biểu Tuần ${currentWeekNum}!`, "📅");
   }
 
   function applyConfigUI() {
@@ -1017,16 +1493,20 @@
 
   function changeWeek(delta) {
     weekOffset += delta;
+    loadViewingWeekData();
     applyConfigUI();
     renderSchedule();
+    updateNotesBadge();
     const info = getAcademicWeekInfo(weekOffset);
     showToast(`Đang xem Tuần ${info.weekNumber} (${info.shortDate})`, "📅");
   }
 
   function resetToRealtimeWeek() {
     weekOffset = 0;
+    loadViewingWeekData();
     applyConfigUI();
     renderSchedule();
+    updateNotesBadge();
     const info = getAcademicWeekInfo(0);
     showToast(`Đã trở về Tuần ${info.weekNumber}!`, "🎯");
   }
@@ -1064,6 +1544,7 @@
     document.getElementById("todayBadge").innerText = todayName;
 
     const info = getCurrentPeriodInfo();
+    const currentWeekInfo = getAcademicWeekInfo(weekOffset);
     const statusText = document.getElementById("currentStatusText");
     const remText = document.getElementById("timeRemainingText");
 
@@ -1079,22 +1560,167 @@
       statusText.innerHTML = `<span class="text-slate-400 font-medium">${info.status}</span>`;
       remText.innerText = "Ngoại Khóa";
     }
+
+    // Hiển thị banner Ghi Nhớ cho tiết học đang diễn ra theo thời gian thực
+    const currentNoteBanner = document.getElementById("currentNoteBanner");
+    const currentNoteText = document.getElementById("currentNoteText");
+    const realtimeWeekNum = getRealtimeWeekNumber();
+    if (info.isActiveSchool && !info.isBreak) {
+      const todayDay = now.getDay();
+      const dayIdx = todayDay - 1;
+      const curKey = `${dayIdx}_${info.periodIdx}_${info.session}`;
+      const realtimeNotes = getNotesForWeek(realtimeWeekNum);
+      const activeNote = realtimeNotes[curKey];
+      if (activeNote && activeNote.text && activeNote.text.trim() !== "" && !dismissedNotes[`${realtimeWeekNum}_${curKey}`]) {
+        if (currentNoteBanner && currentNoteText) {
+          currentNoteText.innerText = activeNote.text;
+          currentNoteBanner.classList.remove("hidden");
+        }
+      } else {
+        if (currentNoteBanner) currentNoteBanner.classList.add("hidden");
+      }
+    } else {
+      if (currentNoteBanner) currentNoteBanner.classList.add("hidden");
+    }
+  }
+
+  function dismissCurrentNotePrompt() {
+    const info = getCurrentPeriodInfo();
+    if (info.isActiveSchool) {
+      const realtimeWeekNum = getRealtimeWeekNumber();
+      const now = new Date();
+      const dayIdx = now.getDay() - 1;
+      const curKey = `${dayIdx}_${info.periodIdx}_${info.session}`;
+      dismissedNotes[`${realtimeWeekNum}_${curKey}`] = true;
+    }
+    const currentNoteBanner = document.getElementById("currentNoteBanner");
+    if (currentNoteBanner) currentNoteBanner.classList.add("hidden");
+    showToast("Đã ẩn ghi nhớ tiết này!", "👌");
+  }
+
+  function completeCurrentNote() {
+    const info = getCurrentPeriodInfo();
+    if (info.isActiveSchool) {
+      const realtimeWeekNum = getRealtimeWeekNumber();
+      const now = new Date();
+      const dayIdx = now.getDay() - 1;
+      const curKey = `${dayIdx}_${info.periodIdx}_${info.session}`;
+      const realtimeNotes = getNotesForWeek(realtimeWeekNum);
+      delete realtimeNotes[curKey];
+      notesByWeek[String(realtimeWeekNum)] = realtimeNotes;
+      saveWeeksNotesToStorage();
+      loadViewingWeekData();
+    }
+    const currentNoteBanner = document.getElementById("currentNoteBanner");
+    if (currentNoteBanner) currentNoteBanner.classList.add("hidden");
+    renderSchedule();
+    updateNotesBadge();
+    showToast("Tuyệt vời! Đã hoàn thành nội dung ghi nhớ tiết này!", "🎉");
   }
 
   function openEdit(dayIdx, pIdx, type) {
     currentEdit = { dayIdx, pIdx, type };
+    const currentWeekNum = getCurrentViewingWeekNumber();
     const currentVal = scheduleData[dayIdx].periods[pIdx][type];
     const dayName = scheduleData[dayIdx].name;
     const sessionName = type === 'sang' ? 'Buổi Sáng' : 'Buổi Chiều';
 
-    document.getElementById("modalLabel").innerText = `${dayName} • Tiết ${pIdx + 1} (${sessionName})`;
+    document.getElementById("modalLabel").innerText = `Tuần ${currentWeekNum} • ${dayName} • Tiết ${pIdx + 1} (${sessionName})`;
     const input = document.getElementById("modalInput");
     input.value = currentVal === "—" ? "" : currentVal;
+
+    // Nạp ghi nhớ của ô nếu có
+    const cellKey = `${dayIdx}_${pIdx}_${type}`;
+    const note = notesData[cellKey];
+    const noteInput = document.getElementById("cellNoteInput");
+    const btnDelNote = document.getElementById("btnDeleteCellNote");
+
+    if (note && note.text) {
+      noteInput.value = note.text;
+      btnDelNote.classList.remove("hidden");
+    } else {
+      noteInput.value = "";
+      btnDelNote.classList.add("hidden");
+    }
     
     const modal = document.getElementById("editModal");
     modal.classList.remove("hidden");
     modal.classList.add("flex");
     input.focus();
+  }
+
+  function appendCellNote(text) {
+    const input = document.getElementById("cellNoteInput");
+    if (input.value.trim()) {
+      input.value = input.value.trim() + ", " + text;
+    } else {
+      input.value = text;
+    }
+    input.focus();
+  }
+
+  function deleteCurrentCellNote() {
+    if (!currentEdit) return;
+    const currentWeekNum = getCurrentViewingWeekNumber();
+    const cellKey = `${currentEdit.dayIdx}_${currentEdit.pIdx}_${currentEdit.type}`;
+    delete notesData[cellKey];
+    notesByWeek[String(currentWeekNum)] = notesData;
+    saveWeeksNotesToStorage();
+    document.getElementById("cellNoteInput").value = "";
+    document.getElementById("btnDeleteCellNote").classList.add("hidden");
+    renderSchedule();
+    updateNotesBadge();
+    showToast(`Đã xóa ghi nhớ của tiết này ở Tuần ${currentWeekNum}!`, "🗑️");
+  }
+
+  function forwardNoteToNextPeriod() {
+    if (!currentEdit) return;
+    const noteVal = document.getElementById("cellNoteInput").value.trim();
+    if (!noteVal) {
+      showToast("Vui lòng nhập nội dung ghi nhớ trước khi gửi!", "⚠️");
+      document.getElementById("cellNoteInput").focus();
+      return;
+    }
+
+    const currentWeekNum = getCurrentViewingWeekNumber();
+    const currentSub = document.getElementById("modalInput").value.trim() || scheduleData[currentEdit.dayIdx].periods[currentEdit.pIdx][currentEdit.type];
+    if (!currentSub || currentSub === "—") {
+      showToast("Tiết học này đang trống môn, không thể tìm tiết tiếp theo!", "⚠️");
+      return;
+    }
+
+    const nextSlot = findNextSlotForSubject(currentSub, currentEdit, currentWeekNum);
+    if (!nextSlot) {
+      showToast(`Không tìm thấy tiết học tiếp theo của môn ${currentSub}!`, "⚠️");
+      return;
+    }
+
+    // Lưu ghi nhớ vào tuần đích (targetWeekNumber)
+    const targetWeekNum = nextSlot.targetWeekNumber || (nextSlot.isNextWeek ? currentWeekNum + 1 : currentWeekNum);
+    const targetNotes = getNotesForWeek(targetWeekNum);
+    targetNotes[nextSlot.key] = {
+      text: noteVal,
+      subject: nextSlot.subject,
+      updatedAt: new Date().toISOString()
+    };
+    notesByWeek[String(targetWeekNum)] = targetNotes;
+    saveWeeksNotesToStorage();
+
+    // Đồng thời lưu lại môn học của tuần hiện tại nếu có chỉnh sửa
+    let val = document.getElementById("modalInput").value.trim() || "—";
+    scheduleData[currentEdit.dayIdx].periods[currentEdit.pIdx][currentEdit.type] = val;
+    schedulesByWeek[String(currentWeekNum)] = scheduleData;
+    saveWeeksScheduleToStorage();
+
+    closeEditModal();
+    renderSchedule();
+    updateNotesBadge();
+
+    if (nextSlot.isNextWeek) {
+      showToast(`Đã lưu ghi nhớ sang Tuần ${targetWeekNum} (${nextSlot.dayName} • Tiết ${nextSlot.periodNumber})! Tuần ${currentWeekNum} không đổi.`, "⏩");
+    } else {
+      showToast(`Đã lưu ghi nhớ cho tiết tiếp theo Tuần ${currentWeekNum} (${nextSlot.dayName} • Tiết ${nextSlot.periodNumber})!`, "⏩");
+    }
   }
 
   function setQuickTag(val) {
@@ -1112,15 +1738,249 @@
 
   function saveCellChange() {
     if (!currentEdit) return;
+    const currentWeekNum = getCurrentViewingWeekNumber();
     let val = document.getElementById("modalInput").value.trim();
     if (!val) val = "—";
 
+    // Lưu môn học vào Tuần hiện tại
     scheduleData[currentEdit.dayIdx].periods[currentEdit.pIdx][currentEdit.type] = val;
-    localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(scheduleData));
+    schedulesByWeek[String(currentWeekNum)] = scheduleData;
+    saveWeeksScheduleToStorage();
+
+    // Lưu ghi nhớ vào Tuần hiện tại
+    const noteVal = document.getElementById("cellNoteInput").value.trim();
+    const cellKey = `${currentEdit.dayIdx}_${currentEdit.pIdx}_${currentEdit.type}`;
+    if (noteVal) {
+      notesData[cellKey] = {
+        text: noteVal,
+        subject: val,
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      delete notesData[cellKey];
+    }
+    notesByWeek[String(currentWeekNum)] = notesData;
+    saveWeeksNotesToStorage();
 
     closeEditModal();
     renderSchedule();
-    showToast("Đã lưu tiết học thành công!", "✅");
+    updateNotesBadge();
+    showToast(`Đã lưu thay đổi cho Tuần ${currentWeekNum}! Các tuần khác vẫn giữ nguyên.`, "✅");
+  }
+
+  /* --- CÁC HÀM QUẢN LÝ GHI NHỚ (MODAL RIÊNG) --- */
+  function openNotesManagerModal() {
+    const currentWeekNum = getCurrentViewingWeekNumber();
+    const subEl = document.getElementById("notesModalWeekSub");
+    if (subEl) {
+      subEl.innerText = `Lên kế hoạch & dặn dò cho tiết tiếp theo • Đang xem Tuần ${currentWeekNum}`;
+    }
+    populateQuickNoteSubjects();
+    renderNotesListInModal();
+    const modal = document.getElementById("notesModal");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+
+  function closeNotesModal() {
+    const modal = document.getElementById("notesModal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+
+  function populateQuickNoteSubjects() {
+    const select = document.getElementById("quickNoteSubjectSelect");
+    select.innerHTML = "";
+    const subjects = getDistinctSubjects();
+
+    if (subjects.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.innerText = "Chưa có môn học nào trong TKB";
+      select.appendChild(opt);
+      document.getElementById("quickNextPeriodPreview").innerHTML = `<span class="text-slate-400 italic">Không có dữ liệu môn học</span>`;
+      return;
+    }
+
+    subjects.forEach(sub => {
+      const opt = document.createElement("option");
+      opt.value = sub;
+      opt.innerText = sub;
+      select.appendChild(opt);
+    });
+
+    onQuickNoteSubjectChange();
+  }
+
+  function onQuickNoteSubjectChange() {
+    const select = document.getElementById("quickNoteSubjectSelect");
+    const sub = select.value;
+    const preview = document.getElementById("quickNextPeriodPreview");
+    const currentWeekNum = getCurrentViewingWeekNumber();
+
+    if (!sub) {
+      selectedNextSlot = null;
+      preview.innerHTML = `<span class="text-slate-400 italic">Vui lòng chọn môn học</span>`;
+      return;
+    }
+
+    const nextSlot = findNextSlotForSubject(sub, null, currentWeekNum);
+    selectedNextSlot = nextSlot;
+
+    if (!nextSlot) {
+      preview.innerHTML = `<span class="text-rose-400">Không tìm thấy tiết tiếp theo của môn ${escapeHtml(sub)}</span>`;
+      return;
+    }
+
+    const targetWNum = nextSlot.targetWeekNumber || (nextSlot.isNextWeek ? currentWeekNum + 1 : currentWeekNum);
+    const weekBadge = nextSlot.isNextWeek 
+      ? `<span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded text-[10px] font-bold">Tuần Sau (Tuần ${targetWNum})</span>` 
+      : `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded text-[10px] font-bold">Cùng Tuần ${targetWNum}</span>`;
+
+    preview.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="text-base">👉</span>
+        <div>
+          <div class="font-extrabold text-white text-xs">${nextSlot.dayName} • Tiết ${nextSlot.periodNumber} (${nextSlot.sessionName})</div>
+          <div class="text-[10px] text-cyan-300">Môn: <strong class="text-amber-300">${escapeHtml(nextSlot.subject)}</strong> • Mục tiêu: <strong>Tuần ${targetWNum}</strong></div>
+        </div>
+      </div>
+      <div>${weekBadge}</div>
+    `;
+  }
+
+  function setQuickNoteText(text) {
+    const input = document.getElementById("quickNoteTextInput");
+    if (input.value.trim()) {
+      input.value = input.value.trim() + ", " + text;
+    } else {
+      input.value = text;
+    }
+    input.focus();
+  }
+
+  function saveQuickNextNoteFromModal() {
+    const noteText = document.getElementById("quickNoteTextInput").value.trim();
+    if (!noteText) {
+      showToast("Vui lòng nhập nội dung ghi nhớ!", "⚠️");
+      document.getElementById("quickNoteTextInput").focus();
+      return;
+    }
+
+    if (!selectedNextSlot) {
+      showToast("Chưa chọn được tiết tiếp theo!", "⚠️");
+      return;
+    }
+
+    const currentWeekNum = getCurrentViewingWeekNumber();
+    const targetWeekNum = selectedNextSlot.targetWeekNumber || (selectedNextSlot.isNextWeek ? currentWeekNum + 1 : currentWeekNum);
+    const targetNotes = getNotesForWeek(targetWeekNum);
+
+    targetNotes[selectedNextSlot.key] = {
+      text: noteText,
+      subject: selectedNextSlot.subject,
+      updatedAt: new Date().toISOString()
+    };
+    notesByWeek[String(targetWeekNum)] = targetNotes;
+    saveWeeksNotesToStorage();
+
+    document.getElementById("quickNoteTextInput").value = "";
+    loadViewingWeekData();
+    renderSchedule();
+    updateNotesBadge();
+    renderNotesListInModal();
+
+    showToast(`Đã lưu ghi nhớ cho môn ${selectedNextSlot.subject} vào Tuần ${targetWeekNum} (${selectedNextSlot.dayName} Tiết ${selectedNextSlot.periodNumber})!`, "💾");
+  }
+
+  function renderNotesListInModal() {
+    const container = document.getElementById("notesListContainer");
+    const currentWeekNum = getCurrentViewingWeekNumber();
+    const curWeekSchedule = getScheduleForWeek(currentWeekNum);
+    const allSlots = getAllWeeklySlots(curWeekSchedule);
+    const slotMap = new Map();
+    allSlots.forEach(s => slotMap.set(s.key, s));
+
+    const curNotes = getNotesForWeek(currentWeekNum);
+    const noteKeys = Object.keys(curNotes).filter(k => curNotes[k] && curNotes[k].text && curNotes[k].text.trim() !== "");
+
+    if (noteKeys.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-6 text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+          <span class="text-xl block mb-1">📭</span>
+          Chưa có ghi nhớ nào cho Tuần ${currentWeekNum}.<br/>Chọn môn ở trên để thêm ghi nhớ cho tiết kế tiếp!
+        </div>
+      `;
+      return;
+    }
+
+    let html = "";
+    noteKeys.forEach(k => {
+      const note = curNotes[k];
+      const slot = slotMap.get(k);
+      const slotInfo = slot ? `${slot.dayName} • Tiết ${slot.periodNumber} (${slot.sessionName})` : k;
+      const subName = (slot && slot.subject) || note.subject || "Môn học";
+
+      html += `
+        <div class="p-2.5 rounded-xl bg-slate-950/80 border border-amber-500/30 flex items-start justify-between gap-2 shadow-sm">
+          <div class="space-y-1 flex-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black px-1.5 py-0.5 rounded">
+                ${escapeHtml(subName)}
+              </span>
+              <span class="text-[10px] text-cyan-300 font-semibold">
+                ${slotInfo}
+              </span>
+              <span class="text-[9px] bg-cyan-950/60 text-cyan-400 border border-cyan-500/30 px-1 py-0.2 rounded font-bold">
+                Tuần ${currentWeekNum}
+              </span>
+            </div>
+            <div class="text-xs font-semibold text-slate-100 flex items-start gap-1">
+              <span class="text-amber-400">📌</span>
+              <span class="break-words">${escapeHtml(note.text)}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="deleteNoteByKey('${k}')" class="w-7 h-7 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 border border-slate-800 flex items-center justify-center text-xs transition" title="Xóa ghi nhớ này ở Tuần ${currentWeekNum}">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function deleteNoteByKey(k) {
+    const currentWeekNum = getCurrentViewingWeekNumber();
+    const curNotes = getNotesForWeek(currentWeekNum);
+    delete curNotes[k];
+    notesByWeek[String(currentWeekNum)] = curNotes;
+    saveWeeksNotesToStorage();
+
+    loadViewingWeekData();
+    renderSchedule();
+    updateNotesBadge();
+    renderNotesListInModal();
+    showToast(`Đã xóa ghi nhớ của Tuần ${currentWeekNum}!`, "🗑️");
+  }
+
+  function clearAllNotesPrompt() {
+    const currentWeekNum = getCurrentViewingWeekNumber();
+    const curNotes = getNotesForWeek(currentWeekNum);
+    if (Object.keys(curNotes).length === 0) return;
+
+    if (confirm(`Bạn có chắc muốn xóa tất cả các ghi nhớ của Tuần ${currentWeekNum} không? Các tuần khác vẫn được giữ nguyên.`)) {
+      notesByWeek[String(currentWeekNum)] = {};
+      saveWeeksNotesToStorage();
+
+      loadViewingWeekData();
+      renderSchedule();
+      updateNotesBadge();
+      renderNotesListInModal();
+      showToast(`Đã xóa tất cả ghi nhớ của Tuần ${currentWeekNum}!`, "🧹");
+    }
   }
 
   function requestResetData() {
@@ -1136,11 +1996,18 @@
   }
 
   function executeResetData() {
-    scheduleData = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
-    localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(scheduleData));
+    const currentWeekNum = getCurrentViewingWeekNumber();
+    // Đặt lại TKB của tuần đang xem về mặc định gốc Tuần 1
+    schedulesByWeek[String(currentWeekNum)] = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+    notesByWeek[String(currentWeekNum)] = {};
+    saveWeeksScheduleToStorage();
+    saveWeeksNotesToStorage();
+
+    loadViewingWeekData();
     closeConfirmModal();
     renderSchedule();
-    showToast("Đã khôi phục thời khóa biểu Tuần 1 gốc!", "🔄");
+    updateNotesBadge();
+    showToast(`Đã khôi phục TKB Tuần ${currentWeekNum} về mặc định! Các tuần khác không bị ảnh hưởng.`, "🔄");
   }
 
   function openSettingsModal() {
@@ -1180,17 +2047,23 @@
   }
 
   function exportDataJson() {
+    const currentWeekNum = getCurrentViewingWeekNumber();
     const exportBundle = {
       config: appConfig,
+      currentViewingWeek: currentWeekNum,
+      weeksSchedule: schedulesByWeek,
+      weeksNotes: notesByWeek,
+      // Hỗ trợ tương thích ngược nếu cần
       schedule: scheduleData,
+      notes: notesData,
       exportedAt: new Date().toISOString()
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportBundle, null, 2));
     const dlAnchor = document.createElement('a');
     dlAnchor.setAttribute("href", dataStr);
-    dlAnchor.setAttribute("download", `TKB_Tuan_1_Backup.json`);
+    dlAnchor.setAttribute("download", `TKB_HeThong_Backup.json`);
     dlAnchor.click();
-    showToast("Đã tải xuống file sao lưu!", "📥");
+    showToast("Đã tải xuống file sao lưu toàn bộ các tuần!", "📥");
   }
 
   function importDataJson(event) {
@@ -1200,17 +2073,40 @@
     reader.onload = function(e) {
       try {
         const parsed = JSON.parse(e.target.result);
-        if (parsed.schedule && Array.isArray(parsed.schedule)) {
-          scheduleData = parsed.schedule;
-          localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(scheduleData));
-          if (parsed.config) {
-            appConfig = { ...appConfig, ...parsed.config };
-            localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(appConfig));
-            applyConfigUI();
-          }
+        let imported = false;
+
+        // Nhập dữ liệu thời khóa biểu theo tuần
+        if (parsed.weeksSchedule && typeof parsed.weeksSchedule === 'object') {
+          schedulesByWeek = parsed.weeksSchedule;
+          saveWeeksScheduleToStorage();
+          imported = true;
+        } else if (parsed.schedule && Array.isArray(parsed.schedule)) {
+          schedulesByWeek["1"] = parsed.schedule;
+          saveWeeksScheduleToStorage();
+          imported = true;
+        }
+
+        // Nhập ghi nhớ theo tuần
+        if (parsed.weeksNotes && typeof parsed.weeksNotes === 'object') {
+          notesByWeek = parsed.weeksNotes;
+          saveWeeksNotesToStorage();
+        } else if (parsed.notes && typeof parsed.notes === 'object') {
+          notesByWeek["1"] = parsed.notes;
+          saveWeeksNotesToStorage();
+        }
+
+        if (parsed.config) {
+          appConfig = { ...appConfig, ...parsed.config };
+          localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(appConfig));
+          applyConfigUI();
+        }
+
+        if (imported) {
+          loadViewingWeekData();
           renderSchedule();
+          updateNotesBadge();
           closeSettingsModal();
-          showToast("Đã nhập dữ liệu thành công!", "🎉");
+          showToast("Đã nhập dữ liệu các tuần thành công!", "🎉");
         } else {
           showToast("File không đúng cấu trúc thời khóa biểu!", "⚠️");
         }
@@ -1298,14 +2194,38 @@
     }, 2400);
   }
 
+  // ĐÓNG / MỞ RỘNG CÁC PHẦN THÔNG TIN THAM KHẢO (CUỘN GỌN MẶC ĐỊNH)
+  function toggleSection(contentId, iconId, btnTextId) {
+    const content = document.getElementById(contentId);
+    const icon = document.getElementById(iconId);
+    const btnText = document.getElementById(btnTextId);
+    if (!content) return;
+
+    const isHidden = content.classList.contains("hidden");
+    if (isHidden) {
+      content.classList.remove("hidden");
+      if (icon) icon.innerText = "▲";
+      if (btnText) btnText.innerText = "Thu gọn";
+    } else {
+      content.classList.add("hidden");
+      if (icon) icon.innerText = "▼";
+      if (btnText) btnText.innerText = "Mở rộng";
+    }
+  }
+
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closeEditModal();
       closeConfirmModal();
       closeSettingsModal();
+      closeNotesModal();
     }
     if (e.key === "Enter" && !document.getElementById("editModal").classList.contains("hidden")) {
-      saveCellChange();
+      if (document.activeElement && document.activeElement.tagName === "TEXTAREA") {
+        if (e.ctrlKey) saveCellChange();
+      } else {
+        saveCellChange();
+      }
     }
   });
 
