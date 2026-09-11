@@ -492,12 +492,12 @@
   </header>
 
   <div class="no-print flex items-center gap-2">
-    <button id="btnViewAll" onclick="setViewMode('all')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 glass-panel border-cyan-400 text-cyan-400 shadow-[0_0_12px_rgba(56,189,248,0.2)]">
-      <span>📅</span> Xem Cả Tuần
+    <button id="btnViewToday" onclick="setViewMode('today')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 glass-panel border-cyan-400 text-cyan-400 shadow-[0_0_12px_rgba(56,189,248,0.2)]">
+      <span>🎯</span> Chỉ Hôm Nay
     </button>
 
-    <button id="btnViewToday" onclick="setViewMode('today')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 glass-panel border-slate-700 text-slate-400 hover:text-white">
-      <span>🎯</span> Chỉ Hôm Nay
+    <button id="btnViewAll" onclick="setViewMode('all')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 glass-panel border-slate-700 text-slate-400 hover:text-white">
+      <span>📅</span> Xem Cả Tuần
     </button>
 
     <button onclick="requestResetData()" class="px-3 py-2 rounded-xl text-xs font-bold transition glass-panel border-slate-700 text-slate-400 hover:text-rose-400 hover:border-rose-500/40" title="Khôi phục TKB gốc Tuần 1">
@@ -986,7 +986,7 @@
   let notesData = {};
   let dismissedNotes = {};
   let selectedNextSlot = null;
-  let viewMode = 'all'; // 'all' hoặc 'today'
+  let viewMode = 'today'; // 'today' hoặc 'all'
   let currentEdit = null;
   let appConfig = {
     title: "Thời Khóa Biểu Tuần 1",
